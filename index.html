@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Slam Trainer Pro</title>
+    <style>
+        body { background: #0a0a0a; color: #eee; font-family: 'Inter', sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; overflow: hidden; }
+        .container { position: relative; width: 400px; padding: 40px; border-radius: 12px; background: #111; border: 1px solid #222; }
+        
+        /* The Visual Tick Tracker */
+        #tick-track { position: absolute; top: 0; left: 0; height: 4px; width: 0%; background: #007bff; transition: none; }
+        
+        .row { display: flex; justify-content: center; gap: 15px; margin-bottom: 20px; }
+        .box { width: 80px; height: 80px; line-height: 80px; border: 2px solid #333; border-radius: 8px; font-weight: 800; font-size: 1.2em; background: #151515; color: #444; transition: 0.05s; }
+        
+        /* Minimalist States */
+        .active { border-color: #007bff; color: #fff; }
+        .success { background: #28a745; border-color: #34ce57; color: #fff; box-shadow: 0 0 20px rgba(40, 167, 69, 0.2); }
+        .buffered { background: #17a2b8; border-color: #1fc8e3; color: #fff; }
+        .fail { background: #dc3545; border-color: #ff4d5e; color: #fff; }
+
+        #ms-display { font-family: monospace; font-size: 2em; margin-top: 10px; color: #333; }
+        .timer-label { font-size: 0.7em; text-transform: uppercase; letter-spacing: 2px; color: #444; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div id="tick-track"></div>
+        <div class="row">
+            <div id="t1" class="box">3</div>
+            <div id="t2" class="box">1</div>
+        </div>
+        <div class="timer-label">Gap Milliseconds</div>
+        <div id="ms-display">00.0</div>
+    </div>
+
+    <script>
+        let stage = 0; 
+        let startTime = 0;
+        const tickBar = document.getElementById('tick-track');
+        const msDisplay = document.getElementById('ms-display');
+        const boxes = { t1: document.getElementById('t1'), t2: document.getElementById('t2') };
+
+        // Continuous Ghost Bar (50ms cycles)
+        function animateTick() {
+            tickBar.style.width = "0%";
+            setTimeout(() => {
+                tickBar.style.transition = "width 50ms linear";
+                tickBar.style.width = "100%";
+            }, 0);
+            setTimeout(() => {
+                tickBar.style.transition = "none";
+                animateTick();
+            }, 50);
+        }
+        animateTick();
+
+        window.addEventListener('keydown', (e) => {
+            const key = e.key.toLowerCase();
+            if (stage === 0 && key === '3') boxes.t1.classList.add('active');
+            if (stage === 1 && key === '1') boxes.t2.classList.add('active');
+        });
+
+        window.addEventListener('mousedown', (e) => {
+            if (e.button !== 0) return;
+            const now = performance.now();
+
+            if (stage === 0 && boxes.t1.classList.contains('active')) {
+                startTime = now;
+                stage = 1;
+                boxes.t1.className = 'box success';
+                msDisplay.style.color = "#222";
+            } 
+            else if (stage === 1 && boxes.t2.classList.contains('active')) {
+                const gap = now - startTime;
+                stage = 2;
+                msDisplay.innerText = gap.toFixed(1);
+
+                if (gap < 50) {
+                    boxes.t2.className = 'box success';
+                    msDisplay.style.color = "#28a745";
+                } else if (gap <= 100) {
+                    boxes.t2.className = 'box buffered';
+                    msDisplay.style.color = "#17a2b8";
+                } else {
+                    boxes.t2.className = 'box fail';
+                    msDisplay.style.color = "#dc3545";
+                }
+                
+                setTimeout(() => {
+                    stage = 0;
+                    boxes.t1.className = 'box';
+                    boxes.t2.className = 'box';
+                }, 800);
+            }
+        });
+    </script>
+</body>
+</html>
